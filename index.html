@@ -89,6 +89,7 @@
 		 <a class="btn btn-block btn-success" style="display: none;" id="downBtn">下载</a> 
 		<script>
 		$(document).ready(function(){
+			var globalBlob;
 			marked.setOptions({
 				renderer: new marked.Renderer(),
 				gfm: true,
@@ -113,18 +114,23 @@
 				$("#resultText").html(marked($("#contentInput").val()));
 				$("#result").css('display', 'block');
 				$("#authorFooter").text($("#authorInput").val());
-				html2canvas(document.getElementById("result"), {
-					allowTaint: true,
-					onrendered: function(canvas) {
+				var prom1 = domtoimage.toPng(document.getElementById('result'))
+					.then(function(dataUrl){
+						var canvas = document.createElement('img');
+						canvas.src = dataUrl;
 						$('#resultCanvas').remove();
 						$(canvas).attr('id', 'resultCanvas');
 						$("#canvasContainer").append(canvas);
+						// delete localStorage["cinn.backup"];
+					});
+				var prom2 = domtoimage.toBlob(document.getElementById('result'))
+					.then(function(blob){
+						globalBlob = blob;
+					});
+				Promise.all([prom1, prom2]).then(function(){
 						$("#result").css('display', 'none');
 						$("#downBtn").css('display', 'block');
-						// delete localStorage["cinn.backup"];
-					}
 				});
-				$("#downBtn").css('display', 'block');
 			});
 			$("#contentInput").on('change', function(){
 				localStorage["cinn.backup"] = $("#contentInput").val();
@@ -132,13 +138,10 @@
 			$("#authorInput").on('change', function(){
 				localStorage["cinn.author"] = $("#authorInput").val();
 			});
-			$("#downBtn").on('click', function(){		
-				domtoimage.toBlob(document.getElementById('resultCanvas'))
-    			.then(function (blob) {
-						var date = new Date;
-        		var filename = "CINN-"+date.getUTCFullYear()+"-"+(date.getUTCMonth()+1)+"-"+date.getUTCDate()+"-"+date.getUTCHours()+"-"+date.getUTCMinutes()+".png";
-        		saveAs(blob, filename);
-    			});
+			$("#downBtn").on('click', function(){
+				var date = new Date;
+        var filename = "CINN-"+date.getUTCFullYear()+"-"+(date.getUTCMonth()+1)+"-"+date.getUTCDate()+"-"+date.getUTCHours()+"-"+date.getUTCMinutes()+".png";
+        saveAs(globalBlob, filename);
 				// delete localStorage["cinn.backup"];
 			});
 		})

@@ -1,0 +1,152 @@
+<!DOCTYPE HTML5>
+<html>
+	<head>
+		<meta http-equiv=Content-Type content="text/html; charset=utf-8">
+		<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=0" />
+		<link rel="stylesheet" href="https://cdn.bootcss.com/bootstrap/3.3.5/css/bootstrap.min.css">
+		<link href="https://cdn.bootcss.com/font-awesome/4.5.0/css/font-awesome.min.css" rel="stylesheet">
+		<script src="https://cdn.bootcss.com/jquery/3.0.0/jquery.js"></script>
+		<script src="https://cdn.bootcss.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+		<script src="https://cdn.bootcss.com/vue/2.0.0-alpha.3/vue.js"></script>
+		<script src="https://cdn.bootcss.com/marked/0.3.6/marked.min.js"></script>
+		<link href="https://cdn.bootcss.com/bootswatch/4.0.0-alpha.6/cerulean/bootstrap.min.css" rel="stylesheet">
+		<script src="https://cdn.bootcss.com/html2canvas/0.5.0-beta4/html2canvas.min.js"></script>
+		<script src="https://cdn.bootcss.com/dom-to-image/2.5.2/dom-to-image.min.js"></script>
+		<style type="text/css">
+		html, body{
+			width: 100%;
+			height: 100%;
+			position: absolute;
+			font-size: 1em;
+			font-family: url(font.otf);
+		}
+		#app{
+			margin-left: 1em;
+			margin-right: 1em;
+		}
+		#resLogo{
+			width: 100%;
+		}
+		#result{
+			width: 500px;
+			padding: 0.8rem;
+			background-color: white;
+			color: #00b5f1;
+			/* border-style: dashed;
+			border-width: 2px;
+			border-color:#00b5f1; */
+		}
+		#resultText{
+			font-size: 28px;
+			word-break: break-all;
+		}
+		#resultText > p{
+			text-indent: 1em;
+		}
+		.resultFooter{
+			text-align: right;
+		}
+		#authorFooter{
+			font-weight: bold;
+		}
+		</style>
+		<title>CINN Editor</title>
+	</head>
+	<body>
+		<div id="app">
+			<h1>
+				<ruby>
+					塞伯坦独立新闻网
+					<rt>Cybertron Independent News Network</rt>
+				</ruby>
+				编辑器
+			</h1>
+			<div class="form-group">
+				<label for="authorInput">作者</label>
+				<input id="authorInput" rows=30 class="form-control"/>
+			</div>
+			<div class="form-group">
+				<label for="contentInput">正文(<a target="_blank" href="http://www.gcssloop.com/markdown/markdown-start">Markdown</a>)</label>
+				<textarea id="contentInput" rows=30 class="form-control">
+# 标题
+
+正文</textarea>
+			</div>
+		</div>
+		<button class="btn btn-block btn-primary" id="renderBtn">生成</button>
+		<div id="result" style="display: none;">
+			<div id="resultText"></div>
+			<p class="resultFooter" id="authorFooter"/>
+			<p class="resultFooter">
+				<b>塞伯坦独立新闻网</b>
+			</p>
+			<p class="resultFooter" id="resultDate">
+			</p>
+			<img src="LOGO.png" id="resLogo"/>
+		</div>
+		<div id="canvasContainer"></div>
+		 <a class="btn btn-block btn-success" style="display: none;" id="downBtn">下载</a> 
+		<script>
+		$(document).ready(function(){
+			marked.setOptions({
+				renderer: new marked.Renderer(),
+				gfm: true,
+				tables: true,
+				breaks: false,
+				pedantic: false,
+				sanitize: false,
+				smartLists: true,
+				smartypants: false
+			});
+			if(localStorage["cinn.backup"]){
+				$("#contentInput").val(localStorage["cinn.backup"])
+			}
+			if(localStorage["cinn.author"]){
+				$("#authorInput").val(localStorage["cinn.author"])
+			}
+			$("#renderBtn").on('click', function(){
+				$("#resultDate").text((function(){
+						var date = new Date();
+						return '地球标准时间 '+(date.getUTCMonth()+1)+'月'+date.getUTCDate()+'日';
+					})())
+				$("#resultText").html(marked($("#contentInput").val()));
+				$("#result").css('display', 'block');
+				$("#authorFooter").text($("#authorInput").val());
+				// html2canvas(document.getElementById("result"), {
+				// 	allowTaint: true,
+				// 	onrendered: function(canvas) {
+				// 		$('#resultCanvas').remove();
+				// 		$(canvas).attr('id', 'resultCanvas');
+				// 		$("#canvasContainer").append(canvas);
+				// 		$("#result").css('display', 'none');
+				// 		$("#downBtn").css('display', 'block');
+				// 		// delete localStorage["cinn.backup"];
+				// 	}
+				// });
+				$("#downBtn").css('display', 'block');
+			});
+			$("#contentInput").on('change', function(){
+				localStorage["cinn.backup"] = $("#contentInput").val();
+			});
+			$("#authorInput").on('change', function(){
+				localStorage["cinn.author"] = $("#authorInput").val();
+			});
+			$("#downBtn").on('click', function(){		
+				domtoimage.toBlob(document.getElementById('result'))
+    			.then(function (blob) {
+						var a = document.createElement("a");
+						document.body.appendChild(a);
+    				a.style = "display: none";
+            url = window.URL.createObjectURL(blob);
+        		a.href = url;
+						var date = new Date;
+        		a.download = "CINN-"+date.getUTCFullYear()+"-"+(date.getUTCMonth()+1)+"-"+date.getUTCDate()+"-"+date.getUTCHours()+"-"+date.getUTCMinutes()+".png";
+        		a.click();
+						a.remove();
+    			});
+				// delete localStorage["cinn.backup"];
+			});
+		})
+		</script>
+	</body>
+</html>

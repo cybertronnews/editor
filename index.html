@@ -113,17 +113,17 @@
 				$("#resultText").html(marked($("#contentInput").val()));
 				$("#result").css('display', 'block');
 				$("#authorFooter").text($("#authorInput").val());
-				// html2canvas(document.getElementById("result"), {
-				// 	allowTaint: true,
-				// 	onrendered: function(canvas) {
-				// 		$('#resultCanvas').remove();
-				// 		$(canvas).attr('id', 'resultCanvas');
-				// 		$("#canvasContainer").append(canvas);
-				// 		$("#result").css('display', 'none');
-				// 		$("#downBtn").css('display', 'block');
-				// 		// delete localStorage["cinn.backup"];
-				// 	}
-				// });
+				html2canvas(document.getElementById("result"), {
+					allowTaint: true,
+					onrendered: function(canvas) {
+						$('#resultCanvas').remove();
+						$(canvas).attr('id', 'resultCanvas');
+						$("#canvasContainer").append(canvas);
+						$("#result").css('display', 'none');
+						$("#downBtn").css('display', 'block');
+						// delete localStorage["cinn.backup"];
+					}
+				});
 				$("#downBtn").css('display', 'block');
 			});
 			$("#contentInput").on('change', function(){
@@ -133,7 +133,7 @@
 				localStorage["cinn.author"] = $("#authorInput").val();
 			});
 			$("#downBtn").on('click', function(){		
-				domtoimage.toBlob(document.getElementById('result'))
+				domtoimage.toBlob(document.getElementById('resultCanvas'))
     			.then(function (blob) {
 						var date = new Date;
         		var filename = "CINN-"+date.getUTCFullYear()+"-"+(date.getUTCMonth()+1)+"-"+date.getUTCDate()+"-"+date.getUTCHours()+"-"+date.getUTCMinutes()+".png";

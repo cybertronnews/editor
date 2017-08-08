@@ -26,20 +26,27 @@
 			margin-left: 1em;
 			margin-right: 1em;
 		}
-		#resLogo{
-			width: 100%;
-		}
 		#result{
-			width: 500px;
 			padding: 0.8rem;
 			background-color: white;
 			color: #00b5f1;
+			font-size: 28px;
+			position: relative;
 			/* border-style: dashed;
 			border-width: 2px;
 			border-color:#00b5f1; */
 		}
+
+		#content-counter{
+			position: fixed;
+			top: 0;
+			right: 0;
+			background-color: rgba(255, 255, 255, 1);
+			color: #00b5f1;
+			font-size: 1.5rem;
+		}
+
 		#resultText{
-			font-size: 28px;
 			word-break: break-all;
 		}
 		#resultText > p{
@@ -48,8 +55,33 @@
 		.resultFooter{
 			text-align: right;
 		}
-		#authorFooter{
-			font-weight: bold;
+
+		.icon-vertical{
+			width: 500px;
+			position: relative;
+		}
+		.content-vertical{
+			position: relative;
+		}
+		.result-vertical{
+			width: 500px;
+		}
+
+		.icon-horizon{
+			width: 500px;
+			left: 0;
+			top: 0;
+		}
+		.content-horizon{
+			margin: 0.8rem;
+			position: absolute;
+			width: 1000px;
+			right: 0;
+			top: 0;
+		}
+		.result-horizon{
+			width: 1550px;
+			min-height: 500px;
 		}
 		</style>
 		<title>CINN Editor</title>
@@ -65,87 +97,126 @@
 			</h1>
 			<div class="form-group">
 				<label for="authorInput">作者</label>
-				<input id="authorInput" rows=30 class="form-control"/>
+				<input
+					@change="save('author', author)" 
+					id="authorInput" 
+					rows=30 
+					class="form-control" 
+					v-model="author"/>
 			</div>
 			<div class="form-group">
 				<label for="contentInput">正文(<a target="_blank" href="http://www.gcssloop.com/markdown/markdown-start">Markdown</a>)</label>
-				<textarea id="contentInput" rows=30 class="form-control">
-# 标题
-
-正文</textarea>
+				<textarea 
+					@change="save('content', content)" 
+					id="contentInput" 
+					rows=30 
+					class="form-control" 
+					v-model="content"></textarea>
 			</div>
+
+			<button
+				class="btn btn-block btn-primary"
+				id="renderBtn"
+				@click="generate"
+			>
+				生成
+			</button>
+			<div
+				id="result"
+				v-if="generating"
+				:class="{'result-vertical': type=='vertical', 'result-horizon': type=='horizon'}"
+			>
+				<div :class="{'content-vertical': type=='vertical', 'content-horizon': type=='horizon'}">
+					<div id="resultText" v-html="markdown(content)"></div>
+					<p class="resultFooter" id="authorFooter"></p>
+					<p class="resultFooter">
+						<b>塞伯坦独立新闻网</b>
+					</p>
+					<p class="resultFooter"><b>{{author}}</b></p>
+					<p class="resultFooter">地球标准时间 {{date | dateMD}}</p>
+				</div>
+				<img 
+					src="LOGO.png" 
+					id="resLogo"
+					:class="{'icon-vertical': type=='vertical', 'icon-horizon': type=='horizon'}"/>
+			</div>
+			<div v-if="blob">
+				<img
+					:src="blob2url(blob)"
+				/>
+			</div>
+			<a
+				@click="download" 
+				class="btn btn-block btn-success" 
+				v-if="generated"
+				id="downBtn">下载</a> 
+			<div id="content-counter">{{content.length}}</div>
 		</div>
-		<button class="btn btn-block btn-primary" id="renderBtn">生成</button>
-		<div id="result" style="display: none;">
-			<div id="resultText"></div>
-			<p class="resultFooter" id="authorFooter"/>
-			<p class="resultFooter">
-				<b>塞伯坦独立新闻网</b>
-			</p>
-			<p class="resultFooter" id="resultDate">
-			</p>
-			<img src="LOGO.png" id="resLogo"/>
-		</div>
-		<div id="canvasContainer"></div>
-		 <a class="btn btn-block btn-success" style="display: none;" id="downBtn">下载</a> 
 		<script>
 		eruda.init();
-		$(document).ready(function(){
-			var globalBlob;
-			marked.setOptions({
-				renderer: new marked.Renderer(),
-				gfm: true,
-				tables: true,
-				breaks: false,
-				pedantic: false,
-				sanitize: false,
-				smartLists: true,
-				smartypants: false
-			});
-			if(localStorage["cinn.backup"]){
-				$("#contentInput").val(localStorage["cinn.backup"])
+		var vm = new Vue({
+			el: '#app',
+			data: {
+				author: localStorage["cinn.author"] || '',
+				content: localStorage["cinn.content"] || "# 标题\n\n正文",
+				generating: false,
+				generated: false,
+				type: 'vertical',
+				blob: null
+			},
+			methods: {
+				save: function(k, v){
+					localStorage["cinn."+k] = v
+				},
+				generate: function(){
+					this.date = new Date
+					this.generating = true
+					this.generated = false
+					this.$nextTick(function(){
+						var dom = document.getElementById('result')
+						var self = this
+						domtoimage
+						.toBlob(dom)
+						.then(function(blob){
+							self.blob = blob
+							self.$nextTick(function(){
+								console.log("FUCK")
+								self.generating = false
+								self.generated  = true
+							})
+						})
+					})
+				},
+				download: function(){
+					var filename = "CINN-"+this.date.getUTCFullYear()+"-"+(this.date.getUTCMonth()+1)+"-"+this.date.getUTCDate()+"-"+this.date.getUTCHours()+"-"+this.date.getUTCMinutes()+".png";
+					saveAs(this.blob, filename);
+				},
+				markdown: function(str){
+					return marked(str)
+				},
+				blob2url: function(blob){
+					var urlCreator = window.URL || window.webkitURL; 
+					return urlCreator.createObjectURL(blob); 
+				}
+			},
+			filters: {
+				dateMD: function(date){
+					return (date.getUTCMonth()+1)+'月'+date.getUTCDate()+'日'
+				},
+			},
+			create: function(){
+				marked.setOptions({
+					renderer: new marked.Renderer(),
+					gfm: true,
+					tables: true,
+					breaks: false,
+					pedantic: false,
+					sanitize: false,
+					smartLists: true,
+					smartypants: false,
+					date: new Date
+				})
 			}
-			if(localStorage["cinn.author"]){
-				$("#authorInput").val(localStorage["cinn.author"])
-			}
-			$("#renderBtn").on('click', function(){
-				$("#resultDate").text((function(){
-						var date = new Date();
-						return '地球标准时间 '+(date.getUTCMonth()+1)+'月'+date.getUTCDate()+'日';
-					})())
-				$("#resultText").html(marked($("#contentInput").val()));
-				$("#result").css('display', 'block');
-				$("#authorFooter").text($("#authorInput").val());
-				var prom1 = domtoimage.toPng(document.getElementById('result'))
-					.then(function(dataUrl){
-						var canvas = document.createElement('img');
-						canvas.src = dataUrl;
-						$('#resultCanvas').remove();
-						$(canvas).attr('id', 'resultCanvas');
-						$("#canvasContainer").append(canvas);
-						// delete localStorage["cinn.backup"];
-					});
-				var prom2 = domtoimage.toBlob(document.getElementById('result'))
-					.then(function(blob){
-						globalBlob = blob;
-					});
-				Promise.all([prom1, prom2]).then(function(){
-						$("#result").css('display', 'none');
-						$("#downBtn").css('display', 'block');
-				});
-			});
-			$("#contentInput").on('change', function(){
-				localStorage["cinn.backup"] = $("#contentInput").val();
-			});
-			$("#authorInput").on('change', function(){
-				localStorage["cinn.author"] = $("#authorInput").val();
-			});
-			$("#downBtn").on('click', function(){
-				var date = new Date;
-        var filename = "CINN-"+date.getUTCFullYear()+"-"+(date.getUTCMonth()+1)+"-"+date.getUTCDate()+"-"+date.getUTCHours()+"-"+date.getUTCMinutes()+".png";
-        saveAs(globalBlob, filename);
-				// delete localStorage["cinn.backup"];
-			});
 		})
 		</script>
 	</body>
